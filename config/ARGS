@@ -1,5 +1,5 @@
 BASE_IMAGE_NAME=tuxdude/homelab-base
-BASE_IMAGE_TAG=master
+BASE_IMAGE_TAG=0.2.10-bookworm-20240612-slim
 USER_NAME=prometheus
 GROUP_NAME=prometheus
 USER_ID=16013
