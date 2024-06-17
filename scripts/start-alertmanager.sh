@@ -3,6 +3,12 @@ set -E -e -o pipefail
 
 alertmanager_config="/data/alertmanager/config/alertmanager.yml"
 
+set_umask() {
+    # Configure umask to allow write permissions for the group by default
+    # in addition to the owner.
+    umask 0002
+}
+
 start_alertmanager() {
     echo "Starting Alertmanager ..."
     echo
@@ -17,4 +23,5 @@ start_alertmanager() {
         "$@"
 }
 
+set_umask
 start_alertmanager "$@"
