@@ -74,9 +74,8 @@ EXPOSE 9093
 HEALTHCHECK --start-period=1m --interval=30s --timeout=3s CMD curl --silent --fail --location http://localhost:9093/-/healthy
 
 ENV USER=${USER_NAME}
-ENV PATH="/opt/bin:${PATH}"
-
 USER ${USER_NAME}:${GROUP_NAME}
 WORKDIR /home/${USER_NAME}
+
 CMD ["start-alertmanager"]
 STOPSIGNAL SIGQUIT
