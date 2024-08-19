@@ -2,12 +2,48 @@
 
 ARG BASE_IMAGE_NAME
 ARG BASE_IMAGE_TAG
-FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG} AS with-scripts
+
+ARG GO_IMAGE_NAME
+ARG GO_IMAGE_TAG
+FROM ${GO_IMAGE_NAME}:${GO_IMAGE_TAG} AS builder
+
+ARG NVM_VERSION
+ARG NVM_SHA256_CHECKSUM
+ARG IMAGE_NODEJS_VERSION
+ARG ALERTMANAGER_VERSION
+
+SHELL ["/bin/bash", "-c"]
 
 COPY scripts/start-alertmanager.sh /scripts/
+COPY patches /patches
 
-ARG BASE_IMAGE_NAME
-ARG BASE_IMAGE_TAG
+RUN \
+    set -E -e -o pipefail \
+    && homelab install build-essential git \
+    && homelab install-node \
+        ${NVM_VERSION:?} \
+        ${NVM_SHA256_CHECKSUM:?} \
+        ${IMAGE_NODEJS_VERSION:?} \
+    && mkdir -p /root/alertmanager-build \
+    # Download alertmanager repo. \
+    && git clone --quiet --depth 1 --branch ${ALERTMANAGER_VERSION:?} https://github.com/prometheus/alertmanager.git /root/alertmanager-build
+
+WORKDIR /root/alertmanager-build
+
+# hadolint ignore=DL4006,SC1091
+RUN \
+    set -E -e -o pipefail \
+    # Apply the patches. \
+    && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -n 1 patch -p2 -i) \
+    && source /opt/nvm/nvm.sh \
+    # Build alertmanager. \
+    && make build \
+    && mkdir -p /output/bin /output/scripts /output/configs \
+    && cp /scripts/* /output/scripts \
+    && cp alertmanager /output/bin \
+    && cp amtool /output/bin \
+    && cp examples/ha/alertmanager.yml /output/configs
+
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
 
 SHELL ["/bin/bash", "-c"]
@@ -19,7 +55,7 @@ ARG GROUP_ID
 ARG ALERTMANAGER_VERSION
 
 # hadolint ignore=DL4006,SC2086
-RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
+RUN --mount=type=bind,target=/alertmanager-build,from=builder,source=/output \
     set -E -e -o pipefail \
     # Create the user and the group. \
     && homelab add-user \
@@ -28,38 +64,15 @@ RUN --mount=type=bind,target=/scripts,from=with-scripts,source=/scripts \
         ${GROUP_NAME:?} \
         ${GROUP_ID:?} \
         --create-home-dir \
-    # Download and install the release. \
-    && mkdir -p /tmp/alertmanager \
-    && PKG_ARCH="$(dpkg --print-architecture)" \
-    && curl \
-        --silent \
-        --fail \
-        --location \
-        --remote-name \
-        --output-dir /tmp/alertmanager \
-        https://github.com/prometheus/alertmanager/releases/download/${ALERTMANAGER_VERSION:?}/alertmanager-${ALERTMANAGER_VERSION#v}.linux-${PKG_ARCH:?}.tar.gz \
-    && curl \
-        --silent \
-        --fail \
-        --location \
-        --remote-name \
-        --output-dir /tmp/alertmanager \
-        "https://github.com/prometheus/alertmanager/releases/download/${ALERTMANAGER_VERSION:?}/sha256sums.txt" \
-    && pushd /tmp/alertmanager \
-    && grep "alertmanager-${ALERTMANAGER_VERSION#v}.linux-${PKG_ARCH:?}.tar.gz" sha256sums.txt | sha256sum -c \
-    && tar xvf alertmanager-${ALERTMANAGER_VERSION#v}.linux-${PKG_ARCH:?}.tar.gz \
-    && pushd alertmanager-${ALERTMANAGER_VERSION#v}.linux-${PKG_ARCH:?} \
     && mkdir -p /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin /data/alertmanager/{config,data} \
-    && mv alertmanager /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
-    && mv amtool /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
-    && mv alertmanager.yml /data/alertmanager/config/alertmanager.yml \
+    && cp /alertmanager-build/bin/alertmanager /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
+    && cp /alertmanager-build/bin/amtool /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
+    && cp /alertmanager-build/configs/alertmanager.yml /data/alertmanager/config/alertmanager.yml \
     && ln -sf /opt/alertmanager-${ALERTMANAGER_VERSION:?} /opt/alertmanager \
     && ln -sf /opt/alertmanager/bin/alertmanager /opt/bin/alertmanager \
     && ln -sf /opt/alertmanager/bin/amtool /opt/bin/amtool \
-    && popd \
-    && popd \
     # Copy the start-alertmanager.sh script. \
-    && cp /scripts/start-alertmanager.sh /opt/alertmanager/ \
+    && cp /alertmanager-build/scripts/start-alertmanager.sh /opt/alertmanager/ \
     && ln -sf /opt/alertmanager/start-alertmanager.sh /opt/bin/start-alertmanager \
     # Set up the permissions. \
     && chown -R ${USER_NAME:?}:${GROUP_NAME:?} /opt/alertmanager-${ALERTMANAGER_VERSION:?} /opt/alertmanager /opt/bin/{alertmanager,amtool,start-alertmanager} /data/alertmanager \
