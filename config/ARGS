@@ -1,5 +1,5 @@
 BASE_IMAGE_NAME=tuxdude/homelab-base
-BASE_IMAGE_TAG=master
+BASE_IMAGE_TAG=0.2.17-bookworm-20240812-slim
 GO_IMAGE_NAME=tuxdude/homelab-go
 GO_IMAGE_TAG=0.1.2-go-1.23.0
 NVM_VERSION=v0.40.0
