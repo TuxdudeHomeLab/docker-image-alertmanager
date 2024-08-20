@@ -305,13 +305,12 @@ diff -r -u -N a/alertmanager/notify/notify.go b/alertmanager/notify/notify.go
 diff -r -u -N a/alertmanager/template/default.tmpl b/alertmanager/template/default.tmpl
 --- a/alertmanager/template/default.tmpl	2024-08-19 10:07:14.262577485 -0700
 +++ b/alertmanager/template/default.tmpl	2024-08-18 22:54:03.554528986 -0700
-@@ -22,6 +22,19 @@
+@@ -22,6 +22,18 @@
  {{ end }}
  {{ end }}
  
 +{{ define "gotify.default.title" }}{{ template "__subject" . }}{{ end }}
 +{{ define "gotify.default.message" }}
-+{{ .CommonAnnotations.SortedPairs.Values | join " " }}
 +{{ if gt (len .Alerts.Firing) 0 }}
 +Alerts Firing:
 +{{ template "__text_alert_list" .Alerts.Firing }}
