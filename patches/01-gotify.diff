@@ -1,6 +1,6 @@
-diff -r -u -N a/alertmanager/asset/assets_vfsdata.go b/alertmanager/asset/assets_vfsdata.go
+diff -u -r -N a/alertmanager/asset/assets_vfsdata.go b/alertmanager/asset/assets_vfsdata.go
 --- a/alertmanager/asset/assets_vfsdata.go	2024-08-19 10:07:14.238576808 -0700
-+++ b/alertmanager/asset/assets_vfsdata.go	2024-08-18 23:06:45.500034784 -0700
++++ b/alertmanager/asset/assets_vfsdata.go	2024-08-19 18:32:52.931590772 -0700
 @@ -163,9 +163,9 @@
  		"/templates/default.tmpl": &vfsgen۰CompressedFileInfo{
  			name:             "default.tmpl",
@@ -13,7 +13,7 @@ diff -r -u -N a/alertmanager/asset/assets_vfsdata.go b/alertmanager/asset/assets
  		},
  		"/templates/email.tmpl": &vfsgen۰CompressedFileInfo{
  			name:             "email.tmpl",
-diff -r -u -N a/alertmanager/config/config.go b/alertmanager/config/config.go
+diff -u -r -N a/alertmanager/config/config.go b/alertmanager/config/config.go
 --- a/alertmanager/config/config.go	2024-08-19 10:07:14.246577034 -0700
 +++ b/alertmanager/config/config.go	2024-08-18 23:28:19.531183271 -0700
 @@ -231,6 +231,9 @@
@@ -71,7 +71,7 @@ diff -r -u -N a/alertmanager/config/config.go b/alertmanager/config/config.go
  	SlackConfigs     []*SlackConfig     `yaml:"slack_configs,omitempty" json:"slack_configs,omitempty"`
  	WebhookConfigs   []*WebhookConfig   `yaml:"webhook_configs,omitempty" json:"webhook_configs,omitempty"`
  	OpsGenieConfigs  []*OpsGenieConfig  `yaml:"opsgenie_configs,omitempty" json:"opsgenie_configs,omitempty"`
-diff -r -u -N a/alertmanager/config/notifiers.go b/alertmanager/config/notifiers.go
+diff -u -r -N a/alertmanager/config/notifiers.go b/alertmanager/config/notifiers.go
 --- a/alertmanager/config/notifiers.go	2024-08-19 10:07:14.246577034 -0700
 +++ b/alertmanager/config/notifiers.go	2024-08-18 23:27:34.689958839 -0700
 @@ -80,6 +80,16 @@
@@ -122,7 +122,7 @@ diff -r -u -N a/alertmanager/config/notifiers.go b/alertmanager/config/notifiers
  // SlackAction configures a single Slack action that is sent with each notification.
  // See https://api.slack.com/docs/message-attachments#action_fields and https://api.slack.com/docs/message-buttons
  // for more information.
-diff -r -u -N a/alertmanager/config/receiver/receiver.go b/alertmanager/config/receiver/receiver.go
+diff -u -r -N a/alertmanager/config/receiver/receiver.go b/alertmanager/config/receiver/receiver.go
 --- a/alertmanager/config/receiver/receiver.go	2024-08-19 10:07:14.246577034 -0700
 +++ b/alertmanager/config/receiver/receiver.go	2024-08-18 19:16:45.835965491 -0700
 @@ -22,6 +22,7 @@
@@ -143,10 +143,10 @@ diff -r -u -N a/alertmanager/config/receiver/receiver.go b/alertmanager/config/r
  	for i, c := range nc.SlackConfigs {
  		add("slack", i, c, func(l log.Logger) (notify.Notifier, error) { return slack.New(c, tmpl, l, httpOpts...) })
  	}
-diff -r -u -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotify/gotify.go
+diff -u -r -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotify/gotify.go
 --- a/alertmanager/notify/gotify/gotify.go	1969-12-31 16:00:00.000000000 -0800
-+++ b/alertmanager/notify/gotify/gotify.go	2024-08-18 23:23:20.579035065 -0700
-@@ -0,0 +1,144 @@
++++ b/alertmanager/notify/gotify/gotify.go	2024-08-19 18:31:37.413669864 -0700
+@@ -0,0 +1,158 @@
 +// Copyright 2019 Prometheus Team
 +// Licensed under the Apache License, Version 2.0 (the "License");
 +// you may not use this file except in compliance with the License.
@@ -218,7 +218,16 @@ diff -r -u -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotif
 +type request struct {
 +	Title     string       `json:"title,omitempty"`
 +	Message   string       `json:"message,omitempty"`
-+	Priority  uint32       `json:priority,omitempty"`
++	Priority  uint32       `json:"priority,omitempty"`
++	Extras    GotifyExtras `json:"extras,omitempty"`
++}
++
++type GotifyExtras struct {
++	ClientDisplay GotifyClientDisplay     `json:"client::display,omitempty"`
++}
++
++type GotifyClientDisplay struct {
++	ContentType string     `json:"contentType,omitempty"`
 +}
 +
 +// Notify implements the Notifier interface.
@@ -262,6 +271,11 @@ diff -r -u -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotif
 +		Title:       title,
 +		Message:	 message,
 +		Priority:    n.conf.Priority,
++		Extras: GotifyExtras{
++			ClientDisplay: GotifyClientDisplay{
++				ContentType: "text/markdown",
++			},
++		},
 +	}
 +
 +	var payload bytes.Buffer
@@ -291,7 +305,7 @@ diff -r -u -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotif
 +	req.Header.Set("X-Gotify-Key", string(token))
 +	return client.Do(req.WithContext(ctx))
 +}
-diff -r -u -N a/alertmanager/notify/notify.go b/alertmanager/notify/notify.go
+diff -u -r -N a/alertmanager/notify/notify.go b/alertmanager/notify/notify.go
 --- a/alertmanager/notify/notify.go	2024-08-19 10:07:14.258577372 -0700
 +++ b/alertmanager/notify/notify.go	2024-08-18 16:04:38.750805818 -0700
 @@ -341,6 +341,7 @@
@@ -302,15 +316,16 @@ diff -r -u -N a/alertmanager/notify/notify.go b/alertmanager/notify/notify.go
  		"slack",
  		"opsgenie",
  		"webhook",
-diff -r -u -N a/alertmanager/template/default.tmpl b/alertmanager/template/default.tmpl
+diff -u -r -N a/alertmanager/template/default.tmpl b/alertmanager/template/default.tmpl
 --- a/alertmanager/template/default.tmpl	2024-08-19 10:07:14.262577485 -0700
 +++ b/alertmanager/template/default.tmpl	2024-08-18 22:54:03.554528986 -0700
-@@ -22,6 +22,18 @@
+@@ -22,6 +22,19 @@
  {{ end }}
  {{ end }}
  
 +{{ define "gotify.default.title" }}{{ template "__subject" . }}{{ end }}
 +{{ define "gotify.default.message" }}
++{{ .CommonAnnotations.SortedPairs.Values | join " " }}
 +{{ if gt (len .Alerts.Firing) 0 }}
 +Alerts Firing:
 +{{ template "__text_alert_list" .Alerts.Firing }}
