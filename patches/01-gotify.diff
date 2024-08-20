@@ -182,7 +182,7 @@ diff -u -r -N a/alertmanager/notify/gotify/gotify.go b/alertmanager/notify/gotif
 +
 +const (
 +	maxTitleLenRunes = 256
-+	maxMessageLenRunes = 4096
++	maxMessageLenRunes = 65536
 +)
 +
 +// Notifier implements a Notifier for Gotify notifications.
