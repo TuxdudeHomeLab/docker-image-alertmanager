@@ -26,7 +26,12 @@ RUN \
         ${IMAGE_NODEJS_VERSION:?} \
     && mkdir -p /root/alertmanager-build \
     # Download alertmanager repo. \
-    && git clone --quiet --depth 1 --branch ${ALERTMANAGER_VERSION:?} https://github.com/prometheus/alertmanager.git /root/alertmanager-build
+    && git clone \
+        --quiet \
+        --depth 1 \
+        --branch ${ALERTMANAGER_VERSION:?} \
+        https://github.com/prometheus/alertmanager \
+        /root/alertmanager-build
 
 WORKDIR /root/alertmanager-build
 
