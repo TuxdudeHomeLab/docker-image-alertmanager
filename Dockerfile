@@ -19,6 +19,7 @@ COPY patches /patches
 
 RUN \
     set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
     && homelab install build-essential git \
     && homelab install-node \
         ${NVM_VERSION:?} \
@@ -38,6 +39,7 @@ WORKDIR /root/alertmanager-build
 # hadolint ignore=DL4006,SC1091
 RUN \
     set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
     # Apply the patches. \
     && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -n 1 patch -p2 -i) \
     && source /opt/nvm/nvm.sh \
@@ -62,6 +64,7 @@ ARG ALERTMANAGER_VERSION
 # hadolint ignore=DL4006,SC2086
 RUN --mount=type=bind,target=/alertmanager-build,from=builder,source=/output \
     set -E -e -o pipefail \
+    && export HOMELAB_VERBOSE=y \
     # Create the user and the group. \
     && homelab add-user \
         ${USER_NAME:?} \
