@@ -25,13 +25,10 @@ RUN \
         ${NVM_VERSION:?} \
         ${NVM_SHA256_CHECKSUM:?} \
         ${IMAGE_NODEJS_VERSION:?} \
-    && mkdir -p /root/alertmanager-build \
     # Download alertmanager repo. \
-    && git clone \
-        --quiet \
-        --depth 1 \
-        --branch ${ALERTMANAGER_VERSION:?} \
+    && homelab download-git-repo \
         https://github.com/prometheus/alertmanager \
+        ${ALERTMANAGER_VERSION:?} \
         /root/alertmanager-build
 
 WORKDIR /root/alertmanager-build
