@@ -91,12 +91,7 @@ EXPOSE 9093
 # Use the healthcheck command part of alertmanager as the health checker.
 HEALTHCHECK \
     --start-period=15s --interval=30s --timeout=3s \
-    CMD curl \
-        --silent \
-        --fail \
-        --location \
-        --show-error \
-        http://localhost:9093/-/healthy
+    CMD homelab healthcheck-service http://localhost:9093/-/healthy
 
 ENV USER=${USER_NAME}
 USER ${USER_NAME}:${GROUP_NAME}
