@@ -74,7 +74,6 @@ RUN --mount=type=bind,target=/alertmanager-build,from=builder,source=/output \
     # Set up the permissions. \
     && chown -R ${USER_NAME:?}:${GROUP_NAME:?} /opt/alertmanager-${ALERTMANAGER_VERSION:?} /opt/alertmanager /opt/bin/{alertmanager,amtool,start-alertmanager} /data/alertmanager \
     # Clean up. \
-    && rm -rf /tmp/alertmanager \
     && homelab cleanup
 
 # Expose the HTTP server port used by Prometheus.
