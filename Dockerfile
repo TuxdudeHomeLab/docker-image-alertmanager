@@ -12,8 +12,6 @@ ARG NVM_SHA256_CHECKSUM
 ARG IMAGE_NODEJS_VERSION
 ARG ALERTMANAGER_VERSION
 
-SHELL ["/bin/bash", "-c"]
-
 COPY scripts/start-alertmanager.sh /scripts/
 COPY patches /patches
 
@@ -49,8 +47,6 @@ RUN \
     && cp examples/ha/alertmanager.yml /output/configs
 
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
-
-SHELL ["/bin/bash", "-c"]
 
 ARG USER_NAME
 ARG GROUP_NAME
