@@ -15,7 +15,7 @@ ARG ALERTMANAGER_VERSION
 COPY scripts/start-alertmanager.sh /scripts/
 COPY patches /patches
 
-# hadolint ignore=SC3040
+# hadolint ignore=DL4006,SC3009,SC3040
 RUN \
     set -E -e -o pipefail \
     && export HOMELAB_VERBOSE=y \
@@ -28,24 +28,19 @@ RUN \
     && homelab download-git-repo \
         https://github.com/prometheus/alertmanager \
         ${ALERTMANAGER_VERSION:?} \
-        /root/alertmanager-build
-
-WORKDIR /root/alertmanager-build
-
-# hadolint ignore=DL4006,SC1091,SC3040
-RUN \
-    set -E -e -o pipefail \
-    && export HOMELAB_VERBOSE=y \
+        /root/alertmanager-build \
+    && pushd /root/alertmanager-build \
     # Apply the patches. \
     && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -n 1 patch -p2 -i) \
     && source /opt/nvm/nvm.sh \
     # Build alertmanager. \
     && make build \
-    && mkdir -p /output/bin /output/scripts /output/configs \
-    && cp /scripts/* /output/scripts \
-    && cp alertmanager /output/bin \
-    && cp amtool /output/bin \
-    && cp examples/ha/alertmanager.yml /output/configs
+    && popd \
+    # Copy the build artifacts. \
+    && mkdir -p /output/{bin,scripts,configs} \
+    && cp /root/alertmanager-build/{alertmanager,amtool} /output/bin \
+    && cp /root/alertmanager-build/examples/ha/alertmanager.yml /output/configs \
+    && cp /scripts/* /output/scripts
 
 FROM ${BASE_IMAGE_NAME}:${BASE_IMAGE_TAG}
 
