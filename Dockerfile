@@ -31,7 +31,7 @@ RUN \
         /root/alertmanager-build \
     && pushd /root/alertmanager-build \
     # Apply the patches. \
-    && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -n 1 patch -p2 -i) \
+    && (find /patches -iname *.diff -print0 | sort -z | xargs -0 -r -n 1 patch -p2 -i) \
     && source /opt/nvm/nvm.sh \
     # Build alertmanager. \
     && make build \
@@ -62,8 +62,7 @@ RUN --mount=type=bind,target=/alertmanager-build,from=builder,source=/output \
         ${GROUP_ID:?} \
         --create-home-dir \
     && mkdir -p /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin /data/alertmanager/{config,data} \
-    && cp /alertmanager-build/bin/alertmanager /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
-    && cp /alertmanager-build/bin/amtool /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
+    && cp /alertmanager-build/bin/{alertmanager,amtool} /opt/alertmanager-${ALERTMANAGER_VERSION:?}/bin \
     && cp /alertmanager-build/configs/alertmanager.yml /data/alertmanager/config/alertmanager.yml \
     && ln -sf /opt/alertmanager-${ALERTMANAGER_VERSION:?} /opt/alertmanager \
     && ln -sf /opt/alertmanager/bin/alertmanager /opt/bin/alertmanager \
